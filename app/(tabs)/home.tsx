@@ -8,15 +8,18 @@ import {
 import React, { useEffect } from "react";
 import { getMovies } from "../../data/Movies.js";
 import MovieCard from "../../components/MovieCard";
-import AntDesign from '@expo/vector-icons/AntDesign';
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/context/store.js";
+import { increseCountAction } from "@/context/actions/userActions.ts";
 
 const home = () => {
   const [movieList, setMovieList] = React.useState([]);
 
-  const [count, setCount] = React.useState(0);
+  const { count, currentUser } = useSelector((state:RootState) => state.user);
+  const dispatch = useDispatch();
 
   const handlePress = () => {
-    setCount(count+1);
+    dispatch(increseCountAction());
   }
 
   useEffect(() => {
@@ -35,7 +38,7 @@ const home = () => {
           <View>
             <Text className="text-gray-100">Hello,</Text>
             <Text className="text-white font-bold text-2xl">
-              Lahiru Nanayakkara
+              {currentUser.name}
             </Text>
           </View>
         </View>
@@ -60,12 +63,12 @@ const home = () => {
                       },
                 ]}
               >
-                <MovieCard name={item.name || item.title} imgUrl={item.poster_path} rating={item.vote_average} />
+                <MovieCard name={item.name || item.title} imgUrl={item.poster_path} rating={item.vote_average} description={item.overview} />
               </TouchableOpacity>
             )}
           />
           <View className="absolute bottom-8 right-0 bg-orange-500 size-20 rounded-full justify-center items-center shadow-lg">
-            <Text className="text-[0.75rem] font-medium text-white">Touches</Text>
+            <Text className="text-[0.75rem] font-medium text-white">Clicks</Text>
             <Text className="text-3xl font-medium text-white mb-1">{count}</Text>
           </View>
         </View>

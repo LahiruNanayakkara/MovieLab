@@ -13,10 +13,13 @@ import React, { useState } from "react";
 import images from "@/constants/images";
 import FormField from "@/components/FormField";
 import ActionButton from "@/components/ActionButton";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, Controller } from "react-hook-form";
+import { useDispatch, useSelector } from "react-redux";
+import { changeUserAction, loginAction } from "@/context/actions/userActions";
+import { RootState } from "@/context/store";
 
 const loginSchema = yup.object().shape({
   email: yup.string().email("Invalid email").required("Email is required"),
@@ -27,10 +30,12 @@ const loginSchema = yup.object().shape({
 });
 
 const SignIn = () => {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const {currentUser} = useSelector((state:RootState) => state.user)
+  const [isSignInFailed, setIsSignInFailed] = useState(false)
+  const [loginError, setLoginError] = useState("")
+
+  const dispatch = useDispatch();
+  const router = useRouter();
 
   const {
     control,
@@ -40,10 +45,21 @@ const SignIn = () => {
     resolver: yupResolver(loginSchema),
   });
 
-  const [user, setUser] = useState(null);
+
   const submit = (data: any) => {
-    setUser(data);
-    Alert.alert("Email: " + data.email + "\nPassword: " + data.password);
+    setLoginError("");
+    if (!currentUser || currentUser.email !== data.email) {
+      setLoginError("User account doesn't exist")
+      return setIsSignInFailed(true)
+    }
+    if (currentUser.password !== data.password) {
+      setLoginError("Invalid password")
+      return setIsSignInFailed(true)
+    }
+    setLoginError("")
+    dispatch(loginAction());
+    // dispatch(changeUserAction(data.email))
+    router.push("/home");
   };
   return (
     <View className="flex-1">
@@ -97,6 +113,11 @@ const SignIn = () => {
             otherStyle={"mt-7"}
             handlePress={handleSubmit(submit)}
           />
+          {isSignInFailed && (
+            <Text className="text-center" style={styles.error}>
+              {loginError}
+            </Text>
+          )}
           <View className="flex-row item-center mt-5">
             <Text className="text-[1.15rem] text-white opacity-80">
               Don't have an account?

@@ -1,57 +1,158 @@
-import { View, Text, SafeAreaView, ScrollView, ImageBackground, Image, StyleSheet, Alert } from 'react-native'
-import React, { useState } from 'react'
-import images from '@/constants/images'
-import FormField from '@/components/FormField'
-import ActionButton from '@/components/ActionButton'
-import { Link } from 'expo-router'
+import {
+  View,
+  Text,
+  SafeAreaView,
+  ScrollView,
+  ImageBackground,
+  Image,
+  StyleSheet,
+  Alert,
+  Button,
+} from "react-native";
+import React, { useState } from "react";
+import images from "@/constants/images";
+import FormField from "@/components/FormField";
+import ActionButton from "@/components/ActionButton";
+import { Link, useRouter } from "expo-router";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useForm, Controller } from "react-hook-form";
+import { useDispatch, useSelector } from "react-redux";
+import { changeUserAction, loginAction } from "@/context/actions/userActions";
+import { RootState } from "@/context/store";
+import { User } from "@/context/types/user";
+
+const loginSchema = yup.object().shape({
+  fullname: yup.string().required("Full name is required"),
+  email: yup.string().email("Invalid email").required("Email is required"),
+  password: yup
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .required("Password is required"),
+});
 
 const SignUp = () => {
-  const [form, setForm] = useState({
-    fullName:"",
-    email:"",
-    password:""
-  })
+  const {currentUser} = useSelector((state:RootState) => state.user)
+  const [isSignInFailed, setIsSignInFailed] = useState(false)
+  const [loginError, setSignUpError] = useState("")
 
-  const submit = () => {
-    if (!form.email || !form.password || !form.fullName) {
-      return Alert.alert("Please fill in all fields");
+  const dispatch = useDispatch();
+  const router = useRouter();
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(loginSchema),
+  });
+
+
+  const submit = (data: any) => {
+    if (currentUser && currentUser.email === data.email) {
+      setSignUpError("User account already exist")
+      return setIsSignInFailed(true)
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      return Alert.alert("Invalid email format");	
+    setSignUpError("")
+    const user:User = {
+      name:data.fullname,
+      email:data.email,
+      password:data.password
     }
-    if (form.password.length < 8) {
-      return Alert.alert("Password must be at least 8 characters");
-    }
-    Alert.alert("Email: "+ form.email + "\nPassword: " + form.password);
-  }
+    dispatch(loginAction());
+    dispatch(changeUserAction(user))
+    router.push("/home");
+  };
   return (
-    <ScrollView contentContainerClassName='h-full'>
-        <ImageBackground 
-          source={images.bgImage} 
-          style={styles.background}
-          resizeMode='cover'
-        >
-          <View className='justify-center h-full w-full px-8 pb-12'>
-          <Text className='text-[2.75rem] font-bold text-white'>Create account</Text>
-          <Text className='text-[1.15rem] text-white opacity-80 my-1'>Please fill the details below.</Text>
-          <FormField title="Email" value={form.email} placeholder={"Email"} handleChangeText={(e) => setForm({...form, email:e})}
-          otherStyles="mt-7"
-          keyboardType="email-address" />
-          <FormField title="Password" value={form.password} placeholder={"Password"} handleChangeText={(e) => setForm({...form, password:e})}
-          otherStyles="mt-7" />
-          <ActionButton text={"Register"} otherStyle={"mt-7"} handlePress={() => {submit()}} />
-          <View className='flex-row item-center mt-5'>
-          <Text className='text-[1.15rem] text-white opacity-80'>Already have an account?</Text>
-                <Link href="/sign-in" className='text-[1.15rem] text-white opacity-80 ps-1 underline'>Sign in</Link>
-
+    <View className="flex-1">
+      <ImageBackground
+        source={images.bgImage}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <View className="justify-center h-full w-full px-8">
+          <Text className="text-[2.75rem] font-bold text-white">
+            Create account
+          </Text>
+          <Text className="text-[1.15rem] text-white opacity-80 my-1">
+          Please fill the details below
+          </Text>
+          <Controller
+            control={control}
+            name="fullname"
+            render={({ field: { onChange, value } }) => (
+              <FormField
+                title="FullName"
+                value={value}
+                placeholder={"Full name"}
+                handleChangeText={onChange}
+                otherStyles="mt-7"
+                keyboardType=""
+              />
+            )}
+          />
+          {errors.fullname && (
+            <Text style={styles.error}>{errors.fullname.message}</Text>
+          )}
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, value } }) => (
+              <FormField
+                title="Email"
+                value={value}
+                placeholder={"Email"}
+                handleChangeText={onChange}
+                otherStyles="mt-7"
+                keyboardType="email-address"
+              />
+            )}
+          />
+          {errors.email && (
+            <Text style={styles.error}>{errors.email.message}</Text>
+          )}
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, value } }) => (
+              <FormField
+                title="Password"
+                value={value}
+                placeholder={"Password"}
+                handleChangeText={onChange}
+                otherStyles="mt-7"
+              />
+            )}
+          />
+          {errors.password && (
+            <Text style={styles.error}>{errors.password.message}</Text>
+          )}
+          <ActionButton
+            text={"Sign in"}
+            otherStyle={"mt-7"}
+            handlePress={handleSubmit(submit)}
+          />
+          {isSignInFailed && (
+            <Text className="text-center" style={styles.error}>
+              {loginError}
+            </Text>
+          )}
+          <View className="flex-row item-center mt-5">
+            <Text className="text-[1.15rem] text-white opacity-80">
+              Already have an account?
+            </Text>
+            <Link
+              href="/sign-in"
+              className="text-[1.15rem] text-white opacity-80 ps-1 underline"
+            >
+              Sign in
+            </Link>
           </View>
-          </View>
-        </ImageBackground>
-        
-      </ScrollView>
-  )
-}
+        </View>
+      </ImageBackground>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -59,14 +160,19 @@ const styles = StyleSheet.create({
   },
   background: {
     flex: 1,
-    justifyContent: 'center', // Centers content vertically
-    alignItems: 'center', // Centers content horizontally
+    justifyContent: "center", // Centers content vertically
+    alignItems: "center", // Centers content horizontally
   },
   text: {
-    color: 'white',
+    color: "white",
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+  },
+  error: {
+    color: "red",
+    marginTop: 8,
+    marginLeft: 8,
   },
 });
 
-export default SignUp
+export default SignUp;

@@ -4,12 +4,16 @@ import { Redirect, Tabs, useRouter } from "expo-router";
 import Octicons from "@expo/vector-icons/Octicons";
 import Feather from "@expo/vector-icons/Feather";
 import { Colors } from "@/constants/colors";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/context/store";
+import { changeUserAction, logOutAction } from "@/context/actions/userActions";
 
 const TabsLayout = () => {
   const router = useRouter();
-  const [loggedIn, setLoggedIn] = React.useState(true);
+  const { isSignedIn } = useSelector((state:RootState) => state.user);
+  const dispatch = useDispatch();
 
-  if (!loggedIn) {
+  if (!isSignedIn) {
     return <Redirect href="/sign-in" />;
   }
   return (
@@ -47,7 +51,7 @@ const TabsLayout = () => {
         listeners={() => ({
           tabPress: (e) => {
             e.preventDefault();
-            router.push("/sign-in");
+            dispatch(logOutAction())
           },
         })}
       />
